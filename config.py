@@ -1,0 +1,12 @@
+IMAGE_SIZE = 448
+
+S = 7
+B = 2
+C = 80
+
+LR = 1e-4
+BS = 8
+EPOCHS = 10
+
+LAMBDA_COORD = 5.0
+LAMBDA_NO_OBJ = 0.5

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from config import B, S, C
 
 
 def encode(boxes, labels, S, C):
@@ -79,10 +80,11 @@ class YoloHead(nn.Module):
 
         self.in_channels = in_channels
         self.num_boxes = num_boxes
+        out_channels = num_boxes * 5 + num_classes
 
         self.conv = nn.Conv2d(
             in_channels=in_channels,
-            out_channels=num_boxes*(5 + num_classes),
+            out_channels=out_channels,
             kernel_size=1
         )
 
@@ -90,23 +92,23 @@ class YoloHead(nn.Module):
 
         x = self.conv(x)
 
-        B, _, S, _ = x.shape
-
         x = x.permute(0, 2, 3, 1).contiguous()
 
         return x
 
 
 class SelfMadeYolo(nn.Module):
-    def __init__(self, num_boxes=2, num_classes=20):
+    def __init__(self, num_boxes=B, num_classes=C, grid_size=S):
         super().__init__()
 
         self.backbone = BackBone()
+        self.pool = nn.AdaptiveAvgPool2d((grid_size, grid_size))
         self.head = YoloHead(
             in_channels=256, num_boxes=num_boxes, num_classes=num_classes)
 
     def forward(self, x):
         features = self.backbone(x)
+        features = self.pool(features)
         preds = self.head(features)
         return preds
 
@@ -123,7 +125,6 @@ class YoloDecoder():
         decoding input image into
         probability and class_id
         '''
-        B = preds.shape[0]
 
         preds = preds.view(
             B,
